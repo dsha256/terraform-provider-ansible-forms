@@ -1,0 +1,30 @@
+name: Go ACC Tests
+
+on: [ push ]
+
+jobs:
+  build:
+
+    runs-on: self-hosted
+    concurrency:
+      group: ONTAP-ACC
+      cancel-in-progress: false
+    # because Dependabot dosn't get access to secrets, and we don't need it to run our ACC TEST, let skip them for that user
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build
+        env:
+          TF_ACC_ANSIBLE_FORMS_HOST: ${{ secrets.TF_ACC_ANSIBLE_FORMS_HOST }}
+          TF_ACC_ANSIBLE_FORMS_USER: ${{ secrets.TF_ACC_ANSIBLE_FORMS_USER }}
+          TF_ACC_ANSIBLE_FORMS_PASS: ${{ secrets.TF_ACC_ANSIBLE_FORMS_PASS }}
+        run: |
+          export GOFLAGS=-buildvcs=false
+          export TF_ACC=1
+          go test `go list ./... | grep -e provider`
